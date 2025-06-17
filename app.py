@@ -24,12 +24,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-from models import Item
+from models import Item, User, UserData
 
 @app.route('/')
 def index():
     return "Flask + Railway + MySQL is working!"
 
+################
 @app.route('/items', methods=['POST'])
 def add_item():
     data = request.get_json()
@@ -42,6 +43,49 @@ def add_item():
 def get_items():
     items = Item.query.all()
     return jsonify([{'id': i.id, 'name': i.name, 'value': i.value} for i in items])
+################
+
+
+@app.route('/users', methods=['POST'])
+def add_user():
+    data = request.get_json()
+    # Создаём User
+    user = User(id_email=data['id_email'])
+
+    # Создаём связанные UserData
+    user_data = UserData(
+        user_email=data['id_email'],  # связка по ключу
+        purpose=data.get('purpose'),
+        gender=data.get('gender'),
+        level=data.get('level'),
+        frequency=data.get('frequency'),
+        trauma=data.get('trauma'),
+        muscles=data.get('muscles'),
+        age=data.get('age')
+    )
+
+    # Устанавливаем связь (можно и user.user_data = user_data)
+    user.user_data = user_data 
+    # Сохраняем в БД
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({
+        'id_email': user.id_email,
+        'user_data': {
+            'purpose': user_data.purpose
+        }
+    }), 201
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
